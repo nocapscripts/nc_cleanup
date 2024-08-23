@@ -263,7 +263,7 @@ local racing = false
 
 local skipCleanupChecks = false
 
-AddEventHandler("np-cleanup:enableCleanup", function(pEnabled)
+AddEventHandler("redux_clean:enableCleanup", function(pEnabled)
   skipCleanupChecks = not pEnabled
 end)
 
@@ -272,10 +272,7 @@ AddEventHandler("baseevents:enteredVehicle", function()
     isInVeh = true
 end)
 
-RegisterNetEvent("mkr_racing:api:currentRace")
-AddEventHandler("mkr_racing:api:currentRace", function(currentRace)
-    racing = currentRace ~= nil
-end)
+
 
 
 Citizen.CreateThread(function()
@@ -394,36 +391,36 @@ AddEventHandler("baseevents:leftVehicle", function()
     isInVeh = false
 end)
 
-RegisterNetEvent('np-cleanup:clearAreaOfEverything')
-AddEventHandler('np-cleanup:clearAreaOfEverything', function (vectors, radius)
+RegisterNetEvent('redux_clean:clearAreaOfEverything')
+AddEventHandler('redux_clean:clearAreaOfEverything', function (vectors, radius)
     ClearAreaOfEverything(vectors.x, vectors.y, vectors.z, radius, false, false, false, false)
 end)
 
-RegisterNetEvent('np-cleanup:clearAreaOfObjects')
-AddEventHandler('np-cleanup:clearAreaOfObjects', function (vectors, radius)
+RegisterNetEvent('redux_clean:clearAreaOfObjects')
+AddEventHandler('redux_clean:clearAreaOfObjects', function (vectors, radius)
     ClearAreaOfObjects(vectors.x, vectors.y, vectors.z, radius)
 end)
 
-RegisterNetEvent('np-cleanup:clearAreaOfPeds')
-AddEventHandler('np-cleanup:clearAreaOfPeds', function (vectors, radius)
+RegisterNetEvent('redux_clean:clearAreaOfPeds')
+AddEventHandler('redux_clean:clearAreaOfPeds', function (vectors, radius)
     ClearAreaOfPeds(vectors.x, vectors.y, vectors.z, radius)
 end)
 
-RegisterNetEvent('np-cleanup:clearAreaOfVehicles')
-AddEventHandler('np-cleanup:clearAreaOfVehicles', function (vectors, radius)
+RegisterNetEvent('redux_clean:clearAreaOfVehicles')
+AddEventHandler('redux_clean:clearAreaOfVehicles', function (vectors, radius)
     ClearAreaOfVehicles(vectors.x, vectors.y, vectors.z, radius, false, false, false, false)
 end)
 
 
 -- Listen for polyzone events for prison
-AddEventHandler("np-polyzone:enter", function(pZone, pData)
+AddEventHandler("redux_polyzone:enter", function(pZone, pData)
     -- Check does this zone even have black listed models?
     if BlackListedPropsByZone[pZone] then
         ActivePolyZones[pZone] = true;
     end
 end)
 
-AddEventHandler("np-polyzone:exit", function(pZone, pData)
+AddEventHandler("redux_polyzone:exit", function(pZone, pData)
    -- Check does this zone even have black listed models?
     if BlackListedPropsByZone[pZone] then
         ActivePolyZones[pZone] = false;

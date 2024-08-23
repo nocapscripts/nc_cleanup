@@ -22,12 +22,12 @@ RegisterCommand('clearAreaOf', function(src, args)
     if not radius then return print('Invalid Radius') end
 
     if clearType == nil or clearType == 'everything' then
-        TriggerClientEvent('np-cleanup:clearAreaOfEverything', -1, vectors, radius + 0.0)
+        TriggerClientEvent('redux_clean:clearAreaOfEverything', -1, vectors, radius + 0.0)
     elseif clearType == 'objects' then
-        TriggerClientEvent('np-cleanup:clearAreaOfObjects', -1, vectors, radius + 0.0)
+        TriggerClientEvent('redux_clean:clearAreaOfObjects', -1, vectors, radius + 0.0)
     elseif clearType == 'vehicles' then
-        TriggerClientEvent('np-cleanup:clearAreaOfVehicles', -1, vectors, radius + 0.0)
+        TriggerClientEvent('redux_clean:clearAreaOfVehicles', -1, vectors, radius + 0.0)
     elseif clearType == 'peds' then
-        TriggerClientEvent('np-cleanup:clearAreaOfPeds', -1, vectors, radius + 0.0)
+        TriggerClientEvent('redux_clean:clearAreaOfPeds', -1, vectors, radius + 0.0)
     end
 end)

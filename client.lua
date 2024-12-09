@@ -2,6 +2,23 @@
 -- should delete any light / chair / fence that is damaged to prevent it lying there for 33 days and 12 minutes.
 
 local ActivePolyZones = {}
+local PlayerData = {}
+local isInVeh = false
+local racing = false
+
+local skipCleanupChecks = false
+
+
+AddEventHandler('onResourceStart', function()
+
+    skipCleanupChecks = true
+end)
+
+RegisterNetEvent('nc:playerLoaded')
+AddEventHandler('nc:playerLoaded',function(xPlayer, isNew, skin)
+   PlayerData = xPlayer
+   skipCleanupChecks = true
+end)
 
 local BlackListedPropsByZone = {
     ["prison"] = {
@@ -13,7 +30,11 @@ local BlackListedPropsByZone = {
     
 }
 
+
+
 local BlackListedProps = { 
+    -- Peds 
+    [-15233126372] = true,
     -- PD Security Case
     [-105439435] = true,
     -- PD ground bar things
@@ -24,8 +45,9 @@ local BlackListedProps = {
     -- readd this if the court house explodes again
    -- [1129053052] = true,
 
-
-
+    [-870868698] = true,
+    [-1933174915] = true,
+    
     -- doors?
     [1501451068] = true,
     [741314661] = true,
@@ -258,12 +280,9 @@ local BlackListedVehicles = {
     [`npwheelchair`] = true,
 }
 
-local isInVeh = false
-local racing = false
 
-local skipCleanupChecks = false
 
-AddEventHandler("redux_clean:enableCleanup", function(pEnabled)
+AddEventHandler("nc_cleanup:enableCleanup", function(pEnabled)
   skipCleanupChecks = not pEnabled
 end)
 
@@ -290,96 +309,98 @@ Citizen.CreateThread(function()
         
         if skipCleanupChecks then
           Citizen.Wait(WaitTime)
-          goto skipwhile
-        end
+            
+          print("Cleanup process")
         
-        for _,handle in ipairs(propList) do
-            local success, model = pcall(function()
-                return GetEntityModel(handle)
-            end)
-            
-            if not success then
-                print("[CLEANUP]Error: Could not get entity model for handle:", handle)
-                print("[CLEANUP]Position:", GetEntityCoords(handle), GetEntityHeading(handle))
-                Sync.DeleteEntity(handle)
-                goto continue 
-            end
-            
-            if BlackListedProps[model] then
-                --failed blacklist check
-                goto continue 
-            end
-
-            -- If theyre in any of the active polyzones and that zone has blacklisted props skip them
-            for zone, active in pairs(ActivePolyZones) do
-                if BlackListedPropsByZone[zone] and active and BlackListedPropsByZone[zone][model] then
-                    goto continue     
+        
+            for _,handle in ipairs(propList) do
+                local success, model = pcall(function()
+                    return GetEntityModel(handle)
+                end)
+                
+                if not success then
+                    print("[CLEANUP]Error: Could not get entity model for handle:", handle)
+                    print("[CLEANUP]Position:", GetEntityCoords(handle), GetEntityHeading(handle))
+                    Sync.DeleteEntity(handle)
+                    goto continue 
+                end
+                
+                if BlackListedProps[model] then
+                    --failed blacklist check
+                    goto continue 
                 end
 
-            end
+                -- If theyre in any of the active polyzones and that zone has blacklisted props skip them
+                for zone, active in pairs(ActivePolyZones) do
+                    if BlackListedPropsByZone[zone] and active and BlackListedPropsByZone[zone][model] then
+                        goto continue     
+                    end
+
+                end
 
 
 
-             -- make sure player isnt carrying?
-            if IsEntityAttached(handle) then
-                goto continue
-            end
-
-            if (GetObjectFragmentDamageHealth(handle,true) ~= nil and (GetEntityHealth(handle) >= GetEntityMaxHealth(handle)) and (GetEntityRotation(handle).x < 25.0 and GetEntityRotation(handle).x > -25.0)) then
-                --failed frag health check
-                goto continue 
-            end
-
-            ShitList[#ShitList+1] = handle
-
-            ::continue::
-        end
-
-        Citizen.Wait(WaitTime)
-
-        for _,prop in ipairs(ShitList) do 
-            local success, model = pcall(function()
-                return GetEntityModel(prop)
-            end)
-            
-            if not success then
-                print("[CLEANUP]Error: Could not get entity model for prop:", prop)
-                goto continue 
-            end
-
-            if not DoesEntityHaveFragInst(prop) then 
-                --failed frag check
-                goto continue 
-            end
-
-            if prop == PlayerPedId() then
-                --don't yeet ourselves
-                goto continue
-            end
-
-            local propCoords = GetEntityCoords(prop)
-
-            if IsEntityOnFire(prop) then
-                StopFireInRange(propCoords.x, propCoords.y, propCoords.z, 10.0)
-            end
-
-            if RoadCheckObjects[model] then
-                local worked, groundZ, normal = GetGroundZAndNormalFor_3dCoord(propCoords.x, propCoords.y, propCoords.z) 
-                if not IsPointOnRoad(propCoords.x, propCoords.y, groundZ) then
+                -- make sure player isnt carrying?
+                if IsEntityAttached(handle) then
                     goto continue
                 end
+
+                if (GetObjectFragmentDamageHealth(handle,true) ~= nil and (GetEntityHealth(handle) >= GetEntityMaxHealth(handle)) and (GetEntityRotation(handle).x < 25.0 and GetEntityRotation(handle).x > -25.0)) then
+                    --failed frag health check
+                    goto continue 
+                end
+
+                ShitList[#ShitList+1] = handle
+
+                ::continue::
             end
 
-            SetEntityCoords(prop, -14204.15,-1923.68,-161.7)
+            Citizen.Wait(WaitTime)
 
-            if IsEntityAMissionEntity(prop) then
-                DeleteObject(prop)
+            for _,prop in ipairs(ShitList) do 
+                local success, model = pcall(function()
+                    return GetEntityModel(prop)
+                end)
+                
+                if not success then
+                    print("[CLEANUP]Error: Could not get entity model for prop:", prop)
+                    goto continue 
+                end
+
+                if not DoesEntityHaveFragInst(prop) then 
+                    --failed frag check
+                    goto continue 
+                end
+
+                if prop == PlayerPedId() then
+                    --don't yeet ourselves
+                    goto continue
+                end
+
+                local propCoords = GetEntityCoords(prop)
+
+                if IsEntityOnFire(prop) then
+                    StopFireInRange(propCoords.x, propCoords.y, propCoords.z, 10.0)
+                end
+
+                if RoadCheckObjects[model] then
+                    local worked, groundZ, normal = GetGroundZAndNormalFor_3dCoord(propCoords.x, propCoords.y, propCoords.z) 
+                    if not IsPointOnRoad(propCoords.x, propCoords.y, groundZ) then
+                        goto continue
+                    end
+                end
+
+                SetEntityCoords(prop, -14204.15,-1923.68,-161.7)
+
+                if IsEntityAMissionEntity(prop) then
+                    DeleteObject(prop)
+                end
+
+                ::continue::
             end
-
-            ::continue::
         end
 
-        ::skipwhile::
+           
 
         Citizen.Wait(250)
     end
@@ -391,23 +412,23 @@ AddEventHandler("baseevents:leftVehicle", function()
     isInVeh = false
 end)
 
-RegisterNetEvent('redux_clean:clearAreaOfEverything')
-AddEventHandler('redux_clean:clearAreaOfEverything', function (vectors, radius)
+RegisterNetEvent('nc_cleanup:clearAreaOfEverything')
+AddEventHandler('nc_cleanup:clearAreaOfEverything', function (vectors, radius)
     ClearAreaOfEverything(vectors.x, vectors.y, vectors.z, radius, false, false, false, false)
 end)
 
-RegisterNetEvent('redux_clean:clearAreaOfObjects')
-AddEventHandler('redux_clean:clearAreaOfObjects', function (vectors, radius)
+RegisterNetEvent('nc_cleanup:clearAreaOfObjects')
+AddEventHandler('nc_cleanup:clearAreaOfObjects', function (vectors, radius)
     ClearAreaOfObjects(vectors.x, vectors.y, vectors.z, radius)
 end)
 
-RegisterNetEvent('redux_clean:clearAreaOfPeds')
-AddEventHandler('redux_clean:clearAreaOfPeds', function (vectors, radius)
+RegisterNetEvent('nc_cleanup:clearAreaOfPeds')
+AddEventHandler('nc_cleanup:clearAreaOfPeds', function (vectors, radius)
     ClearAreaOfPeds(vectors.x, vectors.y, vectors.z, radius)
 end)
 
-RegisterNetEvent('redux_clean:clearAreaOfVehicles')
-AddEventHandler('redux_clean:clearAreaOfVehicles', function (vectors, radius)
+RegisterNetEvent('nc_cleanup:clearAreaOfVehicles')
+AddEventHandler('nc_cleanup:clearAreaOfVehicles', function (vectors, radius)
     ClearAreaOfVehicles(vectors.x, vectors.y, vectors.z, radius, false, false, false, false)
 end)
 
